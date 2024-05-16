@@ -1,10 +1,12 @@
-import { UserButton } from "@clerk/nextjs";
+"use client";
+
+import { useGetAccounts } from "@/features/use-get-accounts";
 
 export default function Home() {
-  return (
-    <div>
-      Dashboard Page
-      <UserButton afterSignOutUrl="/" />
-    </div>
-  );
+  const { data: accounts, isLoading } = useGetAccounts();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  return <div>Dashboard Page</div>;
 }
