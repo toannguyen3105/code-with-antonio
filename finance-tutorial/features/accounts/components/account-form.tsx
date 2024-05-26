@@ -79,9 +79,9 @@ const AccountForm = ({
             disabled={disabled}
             onClick={handleDelete}
             className="w-full"
-            variant="outline"
+            variant="destructive"
           >
-            <Trash className="size-4 mr-4" />
+            <Trash className="size-4 mr-2" />
             Delete account
           </Button>
         )}

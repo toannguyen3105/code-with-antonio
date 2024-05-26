@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-import useCreateAccount from "@/features/accounts/api/use-create-account";
-import AccountForm from "@/features/accounts/components/account-form";
-import useNewAccount from "@/features/accounts/hooks/use-new-account";
+import { Loader2 } from "lucide-react";
 
 import { insertAccountSchema } from "@/db/schema";
 
@@ -14,43 +12,91 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+import AccountForm from "@/features/accounts/components/account-form";
+
+import useDeleteAccount from "@/features/accounts/api/use-delete-account";
+import useEditAccount from "@/features/accounts/api/use-edit-account";
+import useGetAccount from "@/features/accounts/api/use-get-account";
+import useOpenAccount from "@/features/accounts/hooks/use-open-account";
+
+import useConfirm from "@/hooks/use-confirm";
+
 const formSchema = insertAccountSchema.pick({
   name: true,
 });
 
 type FormValues = z.input<typeof formSchema>;
 
-const NewAccountSheet = () => {
-  const { isOpen, onClose } = useNewAccount();
+const EditAccountSheet = () => {
+  const { isOpen, onClose, id } = useOpenAccount();
 
-  const mutation = useCreateAccount();
+  const [ConfirmDialog, confirm] = useConfirm(
+    "Are you sure?",
+    "You are about to delete this transaction"
+  );
+
+  const accountQuery = useGetAccount(id);
+  const editMutation = useEditAccount(id);
+  const deleteMutation = useDeleteAccount(id);
+
+  const isPending = editMutation.isPending || deleteMutation.isPending;
+
+  const isLoading = accountQuery.isLoading;
 
   const onSubmit = (values: FormValues) => {
-    mutation.mutate(values, {
+    editMutation.mutate(values, {
       onSuccess: () => {
         onClose();
       },
     });
   };
+
+  const onDelete = async () => {
+    const ok = await confirm();
+
+    if (ok) {
+      deleteMutation.mutate(undefined, {
+        onSuccess: () => {
+          onClose();
+        },
+      });
+    }
+  };
+
+  const defaultValues = accountQuery.data
+    ? {
+        name: accountQuery.data.name,
+      }
+    : {
+        name: "",
+      };
+
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>New Account</SheetTitle>
-          <SheetDescription>
-            Create a new account to track your transactions
-          </SheetDescription>
-        </SheetHeader>
-        <AccountForm
-          onSubmit={onSubmit}
-          disabled={mutation.isPending}
-          defaultValues={{
-            name: "",
-          }}
-        />
-      </SheetContent>
-    </Sheet>
+    <>
+      <ConfirmDialog />
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Edit Account</SheetTitle>
+            <SheetDescription>Edit an existing account</SheetDescription>
+          </SheetHeader>
+          {isLoading ? (
+            <div className="absolute inset-=0 flex items-center justify-center">
+              <Loader2 className="size-4 text-muted-foreground animate-spin" />
+            </div>
+          ) : (
+            <AccountForm
+              id={id}
+              onSubmit={onSubmit}
+              disabled={isPending}
+              defaultValues={defaultValues}
+              onDelete={onDelete}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 
-export default NewAccountSheet;
+export default EditAccountSheet;
