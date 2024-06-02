@@ -14,6 +14,7 @@ import {
   insertTransactionSchema,
   transactions,
 } from "@/db/schema";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 
 const app = new Hono()
   .get(
@@ -144,7 +145,37 @@ const app = new Hono()
     }
   )
   .post(
-    "bulk-delete",
+    "/bulk-create",
+    clerkMiddleware(),
+    zValidator("json", z.array(insertTransactionSchema.omit({ id: true }))),
+    async (c) => {
+      const auth = getAuth(c);
+      const values = c.req.valid("json");
+
+      if (!auth?.userId) {
+        return c.json(
+          {
+            error: getReasonPhrase(StatusCodes.UNAUTHORIZED),
+          },
+          StatusCodes.UNAUTHORIZED
+        );
+      }
+
+      const data = await db
+        .insert(transactions)
+        .values(
+          values.map((value) => ({
+            id: createId(),
+            ...value,
+          }))
+        )
+        .returning();
+
+      return c.json({ data });
+    }
+  )
+  .post(
+    "/bulk-delete",
     clerkMiddleware(),
     zValidator(
       "json",
