@@ -7,20 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import useBulkDeleteTranstions from "@/features/transactions/api/use-bulk-delete-transations";
+import useGetTransations from "@/features/transactions/api/use-get-transactions";
 import useNewTransation from "@/features/transactions/hooks/use-new-transaction";
-import useBulkDeleteCategories from "@/features/categories/api/use-bulk-delete-categories";
-import useGetCategories from "@/features/categories/api/use-get-categories";
+
 import { columns } from "./columns";
 
 const TransactionsPage = () => {
   const newTransaction = useNewTransation();
-  const deleteCategories = useBulkDeleteCategories();
-  const categoriesQuery = useGetCategories();
-  const categories = categoriesQuery.data || [];
+  const deleteTransactions = useBulkDeleteTranstions();
+  const transactionsQuery = useGetTransations();
+  const transactions = transactionsQuery.data || [];
 
-  const isDisabled = categoriesQuery.isLoading || deleteCategories.isPending;
+  const isDisabled =
+    transactionsQuery.isLoading || deleteTransactions.isPending;
 
-  if (categoriesQuery.isLoading) {
+  if (transactionsQuery.isLoading) {
     return (
       <div className="max-w-screen-2xl mx-auto w-full pb-10 -mt-24">
         <Card className="border-none drop-shadow-sm">
@@ -52,11 +54,11 @@ const TransactionsPage = () => {
         <CardContent>
           <DataTable
             columns={columns}
-            data={categories}
+            data={transactions}
             filterKey="name"
             onDelete={(rows) => {
               const ids = rows.map((r) => r.original.id);
-              deleteCategories.mutate({ ids });
+              deleteTransactions.mutate({ ids });
             }}
             disabled={isDisabled}
           />
